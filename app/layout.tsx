@@ -7,6 +7,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { LiveOrderFeedToast } from '@/components/automation/LiveOrderFeedToast';
 
 export const metadata: Metadata = {
   title: 'FFC | Friends Fried Chicken — Fry It Your Way',
@@ -105,6 +106,9 @@ export default function RootLayout({
 
               {/* Slide-out Cart Drawer */}
               <CartDrawer />
+
+              {/* Automated Real-time Live Community Activity & Order Feed */}
+              <LiveOrderFeedToast />
 
               {/* Main Content Area */}
               <main className="flex-1">{children}</main>

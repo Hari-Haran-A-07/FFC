@@ -229,6 +229,132 @@ class SoundEngine {
       // Ignore
     }
   }
+
+  // 7. Play Ticket Print sound (Thermal POS printer rattle)
+  public playTicketPrint() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      for (let i = 0; i < 4; i++) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800 + i * 150, t + i * 0.04);
+        gain.gain.setValueAtTime(0.08, t + i * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.03);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t + i * 0.04);
+        osc.stop(t + i * 0.04 + 0.035);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 8. Play Delivery Horn / EV Dispatch chime
+  public playDeliveryHorn() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'triangle';
+      osc1.frequency.setValueAtTime(440, t);
+      osc1.frequency.setValueAtTime(554.37, t + 0.12);
+      osc2.frequency.setValueAtTime(659.25, t);
+      osc2.frequency.setValueAtTime(880, t + 0.12);
+
+      gain.gain.setValueAtTime(0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc1.start(t);
+      osc2.start(t);
+      osc1.stop(t + 0.38);
+      osc2.stop(t + 0.38);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 9. Play Oil Submerge Splash
+  public playOilDrop() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const bufferSize = this.ctx.sampleRate * 0.6;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, t);
+      filter.frequency.linearRampToValueAtTime(3200, t + 0.4);
+      filter.Q.setValueAtTime(4.0, t);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.55);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      noise.start(t);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 10. Play subtle Live Order notification ping
+  public playNotificationPing() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046.5, t); // High C6
+      osc.frequency.exponentialRampToValueAtTime(1318.51, t + 0.08); // E6
+
+      gain.gain.setValueAtTime(0.09, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.24);
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const soundManager = new SoundEngine();

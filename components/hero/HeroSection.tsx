@@ -44,11 +44,21 @@ export function HeroSection() {
       <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
         {/* Left Headline & Content */}
         <div className="lg:col-span-6 text-center lg:text-left space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-ffc-surface border border-ffc-cardBorder shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-ffc-red animate-ping" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-ffc-gold">
-              NEXT-GEN FOOD-TECH ORDERING
-            </span>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-ffc-surface border border-ffc-cardBorder shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-ffc-red animate-ping" />
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-ffc-gold">
+                NEXT-GEN FOOD-TECH ORDERING
+              </span>
+            </div>
+
+            <Link
+              href="/track"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ffc-red/15 border border-ffc-red/30 text-[11px] font-mono text-ffc-red hover:bg-ffc-red/25 transition-colors"
+            >
+              <Flame className="w-3 h-3 text-ffc-red animate-pulse" />
+              <span>LIVE TRACKER GPS</span>
+            </Link>
           </div>
 
           <div className="space-y-2">

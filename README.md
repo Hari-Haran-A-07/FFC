@@ -46,12 +46,22 @@
 * Flagship fry lab directory across Bengaluru, Mumbai, and Delhi NCR.
 * Live geolocation calculation, opening hours, pickup/delivery routing.
 
-### 6. 🛵 Live Simulated Kitchen & Delivery Tracker (`/track/[id]`)
-* 6-stage order lifecycle: *Order Received → Kitchen Started → Frying in 175°C Oil (with bubbling animation) → Packed → Out for Delivery → Delivered*.
-* Interactive courier card and real-time stage simulator.
+### 6. 🛵 Autonomous Kitchen & Live Delivery Tracker (`/track/[id]`)
+* **Real-time PID Fryer Telemetry**: Live fluctuating oil temperature readout (174.5°C ↔ 175.8°C), 135dB decibel crunch acoustics, and 99.4% oil purity index.
+* **Canvas GPS Delivery Radar**: Live animated EV Runner (`Ather 450X`) pathing along realistic waypoint bezier curves with dynamic speed (36 km/h) and distance countdown.
+* **Autonomous Terminal Event Log**: Timestamped terminal stream logging real-time POS ticket printing, batter dredging, oil immersion, and courier dispatch.
+* **Sound-Synced Stage Automation**: Autonomous 7s stage cycling with synthesized audio triggers (thermal ticket rattle, oil plunge, crunch, EV dispatch horn).
 
-### 7. 🔊 Web Audio API Sound Synthesizer
-* Native synthesized sound effects for crisp crunches, frying sizzles, fire whooshes, and chimes without external audio dependencies.
+### 7. 🤖 AI Fry Master Auto-Craft Simulation (`/make-your-chicken`)
+* **One-Click Autonomous Customizer**: Auto-executes all 6 lab steps in real time with chef presets (*The Inferno Beast*, *Golden Honey Crunch*, *Blistered Peri Feast*) or procedural AI pairing.
+* **Live HUD Overlay**: Real-time progress bar, 1x/2x speed controls, and auto-generated celebration reveal modal.
+
+### 8. 🔔 Live Automated Activity Feed (`LiveOrderFeedToast`)
+* **Social Proof & Cloud Kitchen Feeds**: Real-time automated orders stream across Bengaluru, Mumbai, and Delhi NCR with natural jitter, dish tags, and audio pings.
+* **Live Ops HQ Status**: Dynamic counter showing active sizzling orders across labs.
+
+### 9. 🔊 Web Audio API Synthesizer
+* Native synthesized sound effects: crisp crunches, frying sizzles, fire whooshes, thermal ticket printer rattles, EV dispatch chimes, and achievement fanfares.
 * Global SFX toggle with live pulse indicator.
 
 ---

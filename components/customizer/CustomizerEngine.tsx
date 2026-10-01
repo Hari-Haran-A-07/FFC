@@ -11,6 +11,7 @@ import { StepSauce } from './StepSauce';
 import { StepMeal } from './StepMeal';
 import { CreationSummaryCard } from './CreationSummaryCard';
 import { CreationRevealModal } from './CreationRevealModal';
+import { AutoCraftSimulator } from './AutoCraftSimulator';
 import { formatPrice } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -81,15 +82,19 @@ export function CustomizerEngine() {
             </h1>
           </div>
 
-          {/* Quick Reset */}
-          <button
-            type="button"
-            onClick={resetCustomizer}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-ffc-card hover:bg-ffc-cardHover border border-ffc-cardBorder text-xs font-mono text-ffc-smoke hover:text-white transition-colors self-start sm:self-auto"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Reset Customizer
-          </button>
+          {/* Action Tools: AI Auto-Craft Simulator + Quick Reset */}
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <AutoCraftSimulator />
+
+            <button
+              type="button"
+              onClick={resetCustomizer}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-ffc-card hover:bg-ffc-cardHover border border-ffc-cardBorder text-xs font-mono text-ffc-smoke hover:text-white transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </button>
+          </div>
         </div>
 
         {/* Step Progress Tracker */}
