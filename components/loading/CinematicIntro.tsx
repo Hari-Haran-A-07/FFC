@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Flame, Sparkles, X } from 'lucide-react';
+import { Flame, Sparkles, Zap, ShieldCheck } from 'lucide-react';
 import { soundManager } from '@/lib/sound';
 
 interface CinematicIntroProps {
@@ -10,12 +10,17 @@ interface CinematicIntroProps {
 }
 
 export function CinematicIntro({ onComplete }: CinematicIntroProps) {
-  const [phase, setPhase] = useState<'ember' | 'emerge' | 'fire' | 'logo' | 'complete'>('ember');
+  const [phase, setPhase] = useState<'ignite' | 'spin_fire' | 'superheat' | 'blast_open' | 'done'>('ignite');
+  const [progress, setProgress] = useState(0);
+  const [rotationDeg, setRotationDeg] = useState(0);
   const [isSkipped, setIsSkipped] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animFrameRef = useRef<number | null>(null);
+
+  // Smooth rotation & progress loop
   useEffect(() => {
-    // Check if user has already experienced intro in this session
+    // Check if user has already seen intro in this session
     const hasSeenIntro = sessionStorage.getItem('ffc_cinematic_intro_seen');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -24,44 +29,65 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       return;
     }
 
-    // Sequence Timers
-    const timer1 = setTimeout(() => {
-      setPhase('emerge');
+    let start = performance.now();
+    const duration = 5200; // 5.2s total sequence
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
+      setProgress(pct);
+
+      // Continuous 3D spin speed ramps up during fire phase
+      setRotationDeg((prev) => prev + (pct > 60 ? 3.5 : pct > 25 ? 2.2 : 1.2));
+
+      if (elapsed < duration && !isSkipped) {
+        animFrameRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    animFrameRef.current = requestAnimationFrame(tick);
+
+    // Sequence Stages
+    const t1 = setTimeout(() => {
+      setPhase('spin_fire');
+      soundManager.playOilDrop();
       soundManager.playSizzle();
     }, 1200);
 
-    const timer2 = setTimeout(() => {
-      setPhase('fire');
+    const t2 = setTimeout(() => {
+      setPhase('superheat');
       soundManager.playFireWhoosh();
-    }, 2800);
+    }, 3000);
 
-    const timer3 = setTimeout(() => {
-      setPhase('logo');
+    const t3 = setTimeout(() => {
+      setPhase('blast_open');
       soundManager.playCrunch();
-    }, 4200);
+      soundManager.playAchievementFanfare();
+    }, 4500);
 
-    const timer4 = setTimeout(() => {
-      setPhase('complete');
+    const t4 = setTimeout(() => {
+      setPhase('done');
       sessionStorage.setItem('ffc_cinematic_intro_seen', 'true');
-      setTimeout(onComplete, 600);
-    }, 5600);
+      setTimeout(onComplete, 700);
+    }, 5200);
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
     };
-  }, [onComplete]);
+  }, [onComplete, isSkipped]);
 
-  // Dynamic Fire & Spark Particle Canvas
+  // Realistic Swirling Fire Vortex & Ember Sparks Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationId: number;
+    let animId: number;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
@@ -77,66 +103,108 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       y: number;
       vx: number;
       vy: number;
-      size: number;
+      radius: number;
       color: string;
       alpha: number;
       decay: number;
+      orbitAngle: number;
+      orbitDist: number;
+      orbitSpeed: number;
+      isSpark: boolean;
     }
 
     const particles: FireParticle[] = [];
-    const colors = ['#FF1A00', '#FF5500', '#FF9900', '#FFCC00', '#FFFFFF'];
+    const colors = [
+      '#FFFFFF', // White core
+      '#FFE853', // Bright gold
+      '#FF8800', // Searing orange
+      '#FF3700', // Hot scarlet
+      '#D61A00', // Deep flame
+    ];
+
+    let frame = 0;
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
+      frame++;
 
-      // Spawn particles based on current phase
-      const spawnRate = phase === 'fire' || phase === 'logo' ? 8 : phase === 'emerge' ? 2 : 1;
+      const centerX = width / 2;
+      const centerY = height / 2;
 
-      for (let s = 0; s < spawnRate; s++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = phase === 'fire' ? Math.random() * 8 + 3 : Math.random() * 3 + 1;
+      // Spawn rate ramps up dynamically with phase
+      const spawnCount =
+        phase === 'blast_open' ? 24 : phase === 'superheat' ? 12 : phase === 'spin_fire' ? 7 : 3;
+
+      for (let s = 0; s < spawnCount; s++) {
+        const orbitAngle = Math.random() * Math.PI * 2;
+        const orbitDist = Math.random() * 160 + 20;
+        const isSpark = Math.random() > 0.35;
+
         particles.push({
-          x: width / 2 + (Math.random() * 60 - 30),
-          y: height / 2 + (Math.random() * 60 - 30),
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - (phase === 'fire' ? 3 : 1),
-          size: Math.random() * (phase === 'fire' ? 6 : 3) + 1,
+          x: centerX + Math.cos(orbitAngle) * orbitDist,
+          y: centerY + Math.sin(orbitAngle) * orbitDist * 0.45,
+          vx: (Math.random() - 0.5) * (phase === 'superheat' ? 4 : 2),
+          vy: -Math.random() * (phase === 'superheat' ? 6 : 3.5) - 1.5,
+          radius: isSpark ? Math.random() * 2.5 + 1 : Math.random() * 6 + 3,
           color: colors[Math.floor(Math.random() * colors.length)],
           alpha: 1,
-          decay: Math.random() * 0.02 + 0.01,
+          decay: Math.random() * 0.02 + 0.008,
+          orbitAngle,
+          orbitDist,
+          orbitSpeed: (Math.random() * 0.05 + 0.02) * (phase === 'superheat' ? 1.8 : 1),
+          isSpark,
         });
       }
 
+      // Update & draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx;
+
+        // Swirling vortex physics around center
+        p.orbitAngle += p.orbitSpeed;
+        p.x += Math.cos(p.orbitAngle) * 1.5 + p.vx;
         p.y += p.vy;
         p.alpha -= p.decay;
 
-        if (p.alpha <= 0) {
+        if (p.alpha <= 0 || p.y < 0) {
           particles.splice(i, 1);
           continue;
         }
 
         ctx.save();
-        ctx.globalAlpha = p.alpha;
+        ctx.globalAlpha = Math.max(0, p.alpha);
         ctx.fillStyle = p.color;
-        ctx.shadowBlur = phase === 'fire' ? 20 : 8;
+        ctx.shadowBlur = p.isSpark ? 8 : 22;
         ctx.shadowColor = p.color;
+
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
 
-      animationId = requestAnimationFrame(render);
+      // Blast Open Shockwave Flare
+      if (phase === 'blast_open') {
+        ctx.save();
+        const shockRadius = (frame % 40) * 18 + 50;
+        ctx.strokeStyle = 'rgba(255, 176, 0, 0.4)';
+        ctx.lineWidth = 6;
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = '#FF6A00';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, shockRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      animId = requestAnimationFrame(render);
     };
 
     render();
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(animId);
     };
   }, [phase]);
 
@@ -148,87 +216,144 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
   if (isSkipped) return null;
 
+  const isBlasting = phase === 'blast_open' || phase === 'done';
+
   return (
     <div
-      className={`fixed inset-0 z-[99999] bg-[#070707] flex flex-col items-center justify-center overflow-hidden transition-opacity duration-700 select-none ${
-        phase === 'complete' ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      className={`fixed inset-0 z-[99999] bg-[#070707] flex flex-col items-center justify-between p-6 overflow-hidden select-none transition-all duration-700 ${
+        isBlasting ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Dynamic Particle Canvas */}
+      {/* Background Radial Glow */}
+      <div
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-[100px] pointer-events-none transition-all duration-700 ${
+          phase === 'superheat' || phase === 'blast_open'
+            ? 'w-[750px] h-[750px] bg-gradient-to-r from-ffc-red via-ffc-orange to-ffc-gold opacity-60 scale-125'
+            : 'w-[450px] h-[450px] bg-ffc-red/25 opacity-40 scale-100'
+        }`}
+      />
+
+      {/* Dynamic Swirling Canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" />
 
-      {/* Skip Button */}
-      <button
-        onClick={handleSkip}
-        type="button"
-        className="absolute top-6 right-6 z-50 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white text-xs font-mono font-bold uppercase tracking-widest transition-all"
-      >
-        SKIP INTRO ➔
-      </button>
-
-      {/* Central Visual Container */}
-      <div className="relative z-20 flex flex-col items-center justify-center text-center px-4 max-w-xl">
-        {/* Phase 1 & 2: Rotating Glowing Ember & Chicken Emergence */}
-        {(phase === 'ember' || phase === 'emerge') && (
-          <div className="relative flex flex-col items-center animate-fadeIn">
-            {/* Glowing Orb */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-ffc-red via-ffc-orange to-ffc-gold blur-xl animate-pulse" />
-
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Flame className="w-12 h-12 text-ffc-gold fill-ffc-gold animate-spin-slow" />
-            </div>
-
-            {phase === 'emerge' && (
-              <div className="mt-8 text-center animate-fadeIn">
-                <span className="text-xs font-mono text-ffc-gold tracking-widest uppercase block animate-pulse">
-                  IGNITING THE LAB...
-                </span>
-              </div>
-            )}
+      {/* Top Header Bar with Skip Button */}
+      <div className="relative z-30 w-full max-w-5xl flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-ffc-red to-ffc-orange flex items-center justify-center shadow-fire">
+            <Flame className="w-4 h-4 text-white fill-white animate-pulse" />
           </div>
-        )}
+          <span className="text-sm font-black font-display tracking-tight text-white">
+            FFC<span className="text-ffc-red">.</span> LABS
+          </span>
+        </div>
 
-        {/* Phase 3: Fire Eruption Phase */}
-        {phase === 'fire' && (
-          <div className="relative flex flex-col items-center animate-fireErupt">
-            <div className="w-64 h-64 rounded-full bg-gradient-to-r from-ffc-red via-ffc-orange to-ffc-gold blur-3xl opacity-80 animate-pulse" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative w-48 h-48 sm:w-60 sm:h-60 animate-sizzle">
-                <Image
-                  src="https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=600&auto=format&fit=crop"
-                  alt="FFC Golden Chicken"
-                  fill
-                  className="object-contain filter drop-shadow-[0_0_45px_#E6391F]"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Phase 4: FFC Logo Reveal */}
-        {phase === 'logo' && (
-          <div className="flex flex-col items-center space-y-4 animate-scaleUp">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-ffc-red via-ffc-orange to-ffc-gold flex items-center justify-center shadow-fire p-4">
-              <Flame className="w-12 h-12 sm:w-16 sm:h-16 text-white fill-white animate-bounce-short" />
-            </div>
-
-            <div>
-              <h1 className="text-4xl sm:text-6xl font-black font-display text-white tracking-tighter uppercase leading-none">
-                FFC<span className="text-ffc-red">.</span>
-              </h1>
-              <p className="text-sm sm:text-base font-black font-display tracking-widest text-ffc-gold uppercase mt-2">
-                FRIENDS FRIED CHICKEN
-              </p>
-              <div className="mt-3 inline-block px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-mono text-white tracking-widest uppercase">
-                FRY IT YOUR WAY.
-              </div>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={handleSkip}
+          type="button"
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white text-xs font-mono font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg"
+        >
+          <span>ENTER FEAST (SKIP)</span>
+          <span className="text-ffc-gold">➔</span>
+        </button>
       </div>
 
-      {/* Ambient Floor Glow */}
-      <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-[100%] bg-ffc-red/20 blur-3xl pointer-events-none" />
+      {/* CENTER STAGE: 3D ROTATING CHICKEN WITH REALISTIC FIRE */}
+      <div className="relative z-20 flex flex-col items-center justify-center my-auto perspective-[1200px]">
+        {/* Swirling Plasma Ring Pedestal */}
+        <div className="relative w-72 h-72 sm:w-96 sm:h-96 flex items-center justify-center">
+          {/* Outer Rotating Energy Ring */}
+          <div
+            style={{ transform: `rotate(${rotationDeg * 0.8}deg)` }}
+            className="absolute inset-2 rounded-full border-2 border-dashed border-ffc-gold/60 blur-[1px] animate-pulse"
+          />
+
+          {/* Inner Counter-Rotating Flame Ring */}
+          <div
+            style={{ transform: `rotate(${-rotationDeg * 1.4}deg)` }}
+            className="absolute inset-8 rounded-full border-4 border-dashed border-ffc-red/70 blur-[2px]"
+          />
+
+          {/* Sizzling Heat Distortion Aura */}
+          <div className="absolute inset-10 rounded-full bg-gradient-to-tr from-ffc-red via-ffc-orange to-ffc-gold opacity-30 blur-2xl animate-pulse" />
+
+          {/* 3D ROTATING CHICKEN PIECE */}
+          <div
+            style={{
+              transform: `rotateY(${rotationDeg * 1.2}deg) rotateX(${Math.sin(rotationDeg * 0.05) * 12}deg) scale(${
+                phase === 'superheat' ? 1.15 : 1
+              })`,
+              transformStyle: 'preserve-3d',
+              transition: 'transform 0.08s linear, scale 0.4s ease-out',
+            }}
+            className="relative w-52 h-52 sm:w-64 sm:h-64 flex items-center justify-center"
+          >
+            {/* Main Crispy Golden Chicken Image */}
+            <div className="relative w-full h-full animate-sizzle">
+              <Image
+                src="https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=700&auto=format&fit=crop"
+                alt="3D Frying Chicken"
+                fill
+                priority
+                className="object-contain filter drop-shadow-[0_15px_35px_rgba(230,57,31,0.9)] contrast-125 saturate-120"
+              />
+            </div>
+
+            {/* Fiery Core Heat Flare behind piece */}
+            <div className="absolute inset-4 bg-gradient-to-t from-ffc-red via-ffc-orange to-transparent opacity-60 rounded-full blur-xl pointer-events-none" />
+          </div>
+
+          {/* Temperature & Crunch Floating Badges */}
+          <div className="absolute -top-3 right-2 bg-ffc-red/90 backdrop-blur-md text-white text-[10px] font-mono font-black px-3 py-1 rounded-full border border-ffc-red shadow-fire animate-bounce-short">
+            🔥 175°C CALIBRATED
+          </div>
+
+          <div className="absolute -bottom-3 left-2 bg-ffc-black/90 backdrop-blur-md text-ffc-gold text-[10px] font-mono font-bold px-3 py-1 rounded-full border border-ffc-gold/40 shadow-gold">
+            💥 135 dB CRUNCH FACTOR
+          </div>
+        </div>
+
+        {/* Phase Subtitle & Status */}
+        <div className="mt-8 text-center space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ffc-card/90 border border-white/10 text-xs font-mono font-bold text-white">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>
+              {phase === 'ignite'
+                ? 'IGNITING 175°C LAB OVEN...'
+                : phase === 'spin_fire'
+                ? 'ROTATING & INFUSING 11 SECRET SPICES...'
+                : phase === 'superheat'
+                ? 'LOCKING MAXIMUM DECIBEL CRUNCH...'
+                : 'FEAST READY! OPENING THE DOORS...'}
+            </span>
+          </div>
+
+          <h2 className="text-xl sm:text-3xl font-black font-display uppercase tracking-tight text-white">
+            FRIENDS FRIED CHICKEN<span className="text-ffc-red">.</span>
+          </h2>
+        </div>
+      </div>
+
+      {/* Bottom Loading Progress Bar & Telemetry */}
+      <div className="relative z-30 w-full max-w-xl space-y-2">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <span className="text-ffc-smoke uppercase">SYSTEM TELEMETRY</span>
+          <span className="text-ffc-gold font-bold">{progress}% READY</span>
+        </div>
+
+        {/* High-tech Progress Bar */}
+        <div className="w-full h-2 bg-ffc-card rounded-full overflow-hidden border border-white/10 p-0.5">
+          <div
+            style={{ width: `${progress}%` }}
+            className="h-full bg-gradient-to-r from-ffc-red via-ffc-orange to-ffc-gold rounded-full transition-all duration-100 shadow-fire"
+          />
+        </div>
+
+        <div className="flex items-center justify-between text-[10px] font-mono text-ffc-smoke">
+          <span>24-HR BUTTERMILK BRINE</span>
+          <span>100% WHOLE CHICKEN</span>
+          <span>FRESH TO ORDER</span>
+        </div>
+      </div>
     </div>
   );
 }
